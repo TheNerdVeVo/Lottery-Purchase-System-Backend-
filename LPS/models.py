@@ -22,10 +22,10 @@ class LotteryTicket(models.Model):
 
     # Different lottery game types
     class GameType(models.TextChoices):
-        POWERBALL = 'PB', 'Powerball'
-        MEGA_MILLIONS = 'MM', 'Mega Millions'
-        LOTTO_TEXAS = 'LT', 'Lotto Texas'
-        TEXAS_TWO_STEP = 'TS', 'Texas Two Step'
+        POWERBALL = "PB", "Powerball"
+        MEGA_MILLIONS = "MM", "Mega Millions"
+        LOTTO_TEXAS = "LT", "Lotto Texas"
+        TEXAS_TWO_STEP = "TS", "Texas Two Step"
 
     # Type of lottery (must be unique so only one entry per game)
     game_type = models.CharField(max_length = 2, choices = GameType.choices, unique = True)
@@ -99,7 +99,7 @@ class Order(models.Model):
 class ElectronicTicket(models.Model):
 
     # Link ticket to an order
-    transaction = models.ForeignKey(Order, on_delete = models.CASCADE, related_name = 'tickets') # allows transaction.tickets access
+    transaction = models.ForeignKey(Order, on_delete = models.CASCADE, related_name = "tickets") # allows transaction.tickets access
 
     # Unique ticket number
     ticket_number = models.CharField(max_length = 20, unique = True, default = generate_ticket_number, editable = False)
