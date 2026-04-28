@@ -14,5 +14,7 @@ urlpatterns = [
     path('api/user-tickets/', views.user_tickets, name='user-tickets'),
     path('api/winning-numbers/', views.winning_numbers, name='winning-numbers'),
     path('api/admin-view/', views.admin_view, name='admin'),
-    path('api/admin-add-tickets/', views.admin_add_tickets, name='admin-add-tickets'),
+    path('api/admin-add-ticket/', views.admin_add_ticket, name='admin-add-ticket'),
+    path('api/admin-remove-ticket/', views.admin_remove_ticket, name='admin-remove-ticket'),
+    path('api/admin-update-ticket/', views.admin_update_ticket, name='admin-update-ticket'),
 ]

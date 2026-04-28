@@ -192,3 +192,41 @@ def admin_add_ticket(request):
     LotteryTicket.objects.create(game_type=game_type, ticket_price=ticket_price, prize_amount=prize_amount)
 
     return Response({'message': 'Ticket added successfully!'}, status=status.HTTP_201_CREATED)
+
+#==================================================
+# Admin View // Remove ticket type
+# Accepts POST request from verified admin
+# and details of ticket to be removed
+#==================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
+def admin_remove_ticket(request):
+    if not request.user.is_staff:                   
+        return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    game_type = request.data.get("game_type")
+
+    LotteryTicket.objects.get(game_type=game_type).delete()
+
+    return Response({'message': 'Ticket removed successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Update ticket type
+# Accepts POST request from verified admin
+# and details of ticket to be updated
+#==================================================
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+
+def admin_update_ticket(request):
+    if not request.user.is_staff:                   
+        return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    game_type = request.data.get("game_type")
+    ticket_price = request.data.get("ticket_price")
+    prize_amount = request.data.get("prize_amount")
+
+    LotteryTicket.objects.filter(game_type=game_type).update(ticket_price=ticket_price, prize_amount=prize_amount)
+
+    return Response({'message': 'Ticket updated successfully!'}, status=status.HTTP_200_OK)
