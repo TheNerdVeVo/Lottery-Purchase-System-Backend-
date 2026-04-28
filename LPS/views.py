@@ -230,3 +230,41 @@ def admin_update_ticket(request):
     LotteryTicket.objects.filter(game_type=game_type).update(ticket_price=ticket_price, prize_amount=prize_amount)
 
     return Response({'message': 'Ticket updated successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Run a draw
+# Accepts POST request from verified admin
+# Runs draw from determine_winners()
+#==================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
+def admin_run_draw(request):
+    if not request.user.is_staff:                   
+        return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    draw_id = request.data.get("draw_id")
+    draw = LotteryDraw.objects.get(draw_id=draw_id)
+
+    draw.determine_winners()                          #call determine_winners from models.py
+
+    return Response({'message': 'Draw completed successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Publish a draw
+# Accepts POST request from verified admin
+# Returns draw along with numbers and winners
+#==================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
+def admin_publish_draw(request):
+    if not request.user.is_staff:                   
+        return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    draw_id = request.data.get("draw_id")
+    draw = LotteryDraw.objects.get(draw_id=draw_id)
+
+    draw.publish_results()                          #call publish_results() from models.py
+
+    return Response({'message': 'Draw results published!'}, status=status.HTTP_200_OK)
