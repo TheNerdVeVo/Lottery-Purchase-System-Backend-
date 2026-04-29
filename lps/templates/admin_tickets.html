@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Manage Tickets{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row-flex">
+    <h2>Manage Tickets</h2>
+    <div class="spacer"></div>
+    <a href="{{ url_for('admin_add_ticket') }}" class="btn btn-accent">+ Add New Ticket</a>
+  </div>
+  <table class="table mt-2">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Top Prize</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td><code>{{ t.ticket_id }}</code></td>
+        <td>{{ t.name }}</td>
+        <td>${{ '%.2f' | format(t.price) }}</td>
+        <td>${{ '{:,.0f}'.format(t.winning_amount) }}</td>
+        <td>
+          {% if t.active %}<span class="badge badge-claimed">Active</span>
+          {% else %}<span class="badge badge-no-win">Inactive</span>{% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('admin_edit_ticket', ticket_id=t.ticket_id) }}" class="btn btn-sm">Edit</a>
+          {% if t.active %}
+          <form method="POST" action="{{ url_for('admin_remove_ticket', ticket_id=t.ticket_id) }}" class="inline-form" onsubmit="return confirm('Remove this ticket?');">
+            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

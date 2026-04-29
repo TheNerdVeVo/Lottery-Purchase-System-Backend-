@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center;">
+  <div style="font-size: 4rem; color: var(--success);">✓</div>
+  <h2 style="color: var(--success);">Purchase Complete!</h2>
+  <p class="text-muted">Order ID: <strong>{{ order.order_id }}</strong></p>
+  <p class="text-muted">Paid <strong>${{ '%.2f' | format(order.total_cost) }}</strong> via {{ order.payment_method }}</p>
+</div>
+
+<div class="card">
+  <h3 style="color: var(--primary-dark);">Your Electronic Tickets</h3>
+  <p class="text-muted mb-2">Save these or display on your phone at a claiming center.</p>
+  {% for t in order.tickets %}
+  <div class="ticket-builder" style="background: white;">
+    <div class="ticket-builder-header">
+      <strong>{{ order.ticket_name }} &middot; Confirmation #{{ t.confirmation }}</strong>
+    </div>
+    <div class="numbers">
+      {% for n in t.numbers %}<span class="ball">{{ n }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="row-flex mt-2">
+    <a href="{{ url_for('orders') }}" class="btn">View All Orders</a>
+    <a href="{{ url_for('browse') }}" class="btn btn-secondary">Browse More Tickets</a>
+  </div>
+</div>
+{% endblock %}

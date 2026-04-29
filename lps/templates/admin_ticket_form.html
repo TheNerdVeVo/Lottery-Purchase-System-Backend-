@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Ticket{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 600px;">
+  <a href="{{ url_for('admin_tickets') }}" class="btn btn-secondary btn-sm mb-2">&larr; Back to Tickets</a>
+  <h2>{{ action }} Lottery Ticket</h2>
+
+  <form method="POST">
+    {% if action == "Add" %}
+    <div class="form-group">
+      <label for="ticket_id">Ticket ID (short code, e.g., "PB")</label>
+      <input type="text" id="ticket_id" name="ticket_id" maxlength="5" required>
+    </div>
+    {% endif %}
+    <div class="form-group">
+      <label for="name">Ticket Name</label>
+      <input type="text" id="name" name="name" value="{{ ticket.name if ticket else '' }}" required>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="price">Price ($)</label>
+        <input type="number" step="0.01" min="0.01" id="price" name="price" value="{{ ticket.price if ticket else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="winning_amount">Top Prize Amount ($)</label>
+        <input type="number" step="1" min="1" id="winning_amount" name="winning_amount" value="{{ ticket.winning_amount if ticket else '' }}" required>
+      </div>
+    </div>
+    <div class="row-flex mt-2">
+      <button type="submit" class="btn btn-accent">{{ action }} Ticket</button>
+      <a href="{{ url_for('admin_tickets') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

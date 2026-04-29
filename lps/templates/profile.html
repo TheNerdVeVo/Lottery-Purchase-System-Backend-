@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>My Profile</h2>
+  <table class="table mt-2">
+    <tbody>
+      <tr><th style="width: 200px; background: #f5f7fa; color: var(--primary-dark);">Name</th><td>{{ user.name }}</td></tr>
+      <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Email</th><td>{{ user.email }}</td></tr>
+      <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Address</th><td>{{ user.address }}</td></tr>
+      <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Phone</th><td>{{ user.phone }}</td></tr>
+      <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Account Type</th><td>{{ user.role|capitalize }}</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
