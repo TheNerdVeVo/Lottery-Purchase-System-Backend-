@@ -249,7 +249,7 @@ class LotteryDraw(models.Model):
         winning_numbers = set(self.get_winning_numbers_list())
 
         # Extract ONLY the main numbers from ticket
-        ticket_numbers = set(int(num.strip()) for num in ticket.numbers.split(","))
+        ticket_numbers = set(int(num.strip()) for num in ticket.numbers.strip("[]").split(","))
 
         # Count how many numbers match
         matches = len(winning_numbers.intersection(ticket_numbers))
