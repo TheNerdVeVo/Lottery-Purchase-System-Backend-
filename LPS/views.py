@@ -285,19 +285,17 @@ def admin_publish_draw(request):
 @permission_classes([IsAuthenticated])
 
 def profile_page_view(request):
-    first_name= request.user.first_name
-    last_name= request.user.last_name
-    username= request.user.username
-    email= request.user.email
 
-    home_add= request.user.customerprofile.home_address
-    phone_no= request.user.customerprofile.phone_number
+    user = request.user
+
+    #Get profile without crashing
+    profile = CustomerProfile.objects.filter(user=user).first()
 
     return Response({
-        'username': username,
-        'first_name': first_name,
-        'last_name': last_name,
-        'email': email,
-        'home_address': home_add,
-        'phone_number': phone_no,
+        'username': user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'home_address': profile.home_address if profile else "",
+        'phone_number': profile.phone_number if profile else "",
     })
