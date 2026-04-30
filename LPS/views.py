@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User             #imports built-in user model for user accounts
 from django.contrib.auth import authenticate, login, logout  #authenticate -> password, login -> session start, logout -> session end
+from django.utils.timezone import now # Import the current date and time
 from rest_framework.decorators import api_view, permission_classes  #decorators that mark functs as api endpoints
 from rest_framework.permissions import IsAuthenticated, AllowAny   #IsAuth -> only logged in users can use ep, AllowAny -> anyone can use ep
 from rest_framework.response import Response  
@@ -169,9 +170,15 @@ def admin_view(request):
         count= ElectronicTicket.objects.filter(lottery_type=game.game_type).count()
         total_revenue+= count*game.ticket_price
     
+    # Count active ticket types, available games
+    active_ticket_types = LotteryTicket.objects.count()
+    
+    # Return system status report
     return Response({
+        'report_date': now().date(),
         'total_tickets_sold': total_tickets_sold,
-        'total_revenue': str(total_revenue)})
+        'total_revenue': str(total_revenue),
+        'active_ticket_types': active_ticket_types})
 
 #==================================================
 # Admin View // Add ticket type
