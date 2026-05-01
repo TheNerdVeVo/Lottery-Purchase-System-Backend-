@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Browse Tickets &middot; Texas LPS{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Browse Lottery Tickets</h2>
+  <form method="GET" action="{{ url_for('browse') }}" class="search-bar">
+    <input type="text" name="q" placeholder="Search by ticket name..." value="{{ q }}">
+    <button type="submit" class="btn">Search</button>
+    {% if q %}<a href="{{ url_for('browse') }}" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
+</div>
+
+{% if tickets %}
+<div class="ticket-grid">
+  {% for t in tickets %}
+  <div class="ticket-card">
+    <div class="ticket-banner {{ t.ticket_id|lower }}">
+      <h3>{{ t.name }}</h3>
+      <div class="ticket-jackpot">${{ '{:,.0f}'.format(t.winning_amount) }}</div>
+      <small>Top Prize</small>
+    </div>
+    <div class="ticket-body">
+      <div class="ticket-price">Cost: <strong>${{ '%.2f' | format(t.price) }}</strong> per ticket</div>
+      <a href="{{ url_for('ticket_detail', ticket_id=t.ticket_id) }}" class="btn">View Details</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <p class="text-muted">No tickets match your search.</p>
+</div>
+{% endif %}
+{% endblock %}

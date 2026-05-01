@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Purchase &middot; {{ ticket.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Purchase {{ ticket.name }}</h2>
+
+  <div class="purchase-summary">
+    <h3 style="color: white;">{{ ticket.name }}</h3>
+    <div class="price">${{ '%.2f' | format(ticket.price) }} per ticket</div>
+    <div style="margin-top: 6px; opacity: 0.85;">Pick 5 numbers from 1 to 50</div>
+  </div>
+
+  <form method="POST" action="{{ url_for('purchase', ticket_id=ticket.ticket_id) }}" id="purchaseForm">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="quantity">Number of tickets (1-10)</label>
+        <input type="number" id="quantity" name="quantity" min="1" max="10" value="1" required>
+      </div>
+      <div class="form-group">
+        <label for="payment_method">Payment Method</label>
+        <select id="payment_method" name="payment_method" required>
+          <option value="">-- Select --</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Venmo">Venmo</option>
+          <option value="Bank">Bank Account</option>
+        </select>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 16px; color: var(--primary-dark);">Your Tickets</h3>
+    <p class="text-muted mb-2">Choose your numbers manually or let us auto-pick.</p>
+    <div id="ticketsContainer"></div>
+
+    <div class="row-flex mt-2" style="padding-top: 16px; border-top: 2px solid var(--border);">
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem;">Total</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary-dark);" id="totalDisplay">${{ '%.2f' | format(ticket.price) }}</div>
+      </div>
+      <div class="spacer"></div>
+      <a href="{{ url_for('ticket_detail', ticket_id=ticket.ticket_id) }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-accent">Complete Purchase</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ticketPrice = {{ ticket.price }};
+const qtyInput = document.getElementById('quantity');
+const container = document.getElementById('ticketsContainer');
+const totalDisplay = document.getElementById('totalDisplay');
+
+function makeTicketBuilder(idx) {
+  const div = document.createElement('div');
+  div.className = 'ticket-builder';
+  div.innerHTML = `
+    <div class="ticket-builder-header">
+      <strong>Ticket #${idx + 1}</strong>
+      <div class="mode-toggle">
+        <button type="button" class="active" data-mode="auto">Auto Pick</button>
+        <button type="button" data-mode="manual">Manual</button>
+      </div>
+    </div>
+    <input type="hidden" name="mode_${idx}" value="auto">
+    <div class="auto-display">★ Numbers will be randomly generated at purchase time.</div>
+    <div class="number-inputs" style="display: none;">
+      ${[0,1,2,3,4].map(j => `<input type="number" name="n${idx}_${j}" min="1" max="50" placeholder="${j+1}" required disabled>`).join('')}
+    </div>
+  `;
+  const buttons = div.querySelectorAll('.mode-toggle button');
+  const hidden = div.querySelector(`input[name="mode_${idx}"]`);
+  const autoDisp = div.querySelector('.auto-display');
+  const numInputs = div.querySelector('.number-inputs');
+  const inputs = numInputs.querySelectorAll('input');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      hidden.value = mode;
+      if (mode === 'manual') {
+        autoDisp.style.display = 'none';
+        numInputs.style.display = 'flex';
+        inputs.forEach(i => { i.disabled = false; i.required = true; });
+      } else {
+        autoDisp.style.display = 'flex';
+        numInputs.style.display = 'none';
+        inputs.forEach(i => { i.disabled = true; i.required = false; });
+      }
+    });
+  });
+  return div;
+}
+
+function rebuild() {
+  let qty = parseInt(qtyInput.value) || 1;
+  if (qty < 1) qty = 1;
+  if (qty > 10) qty = 10;
+  qtyInput.value = qty;
+  container.innerHTML = '';
+  for (let i = 0; i < qty; i++) container.appendChild(makeTicketBuilder(i));
+  totalDisplay.textContent = '$' + (ticketPrice * qty).toFixed(2);
+}
+
+qtyInput.addEventListener('input', rebuild);
+rebuild();
+</script>
+{% endblock %}

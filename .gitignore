@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Database (each user generates their own)
+db.sqlite3
+
+# Mac junk
+.DS_Store
+
+# Editor junk
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="Arial, sans-serif">
+  <defs>
+    <!-- Hollow triangle for inheritance -->
+    <marker id="inherit" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="14" markerHeight="14" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="white" stroke="#1a1a2e" stroke-width="1.5"/>
+    </marker>
+    <!-- Open diamond for aggregation -->
+    <marker id="agg" viewBox="0 0 14 12" refX="0" refY="6" markerWidth="16" markerHeight="14" orient="auto">
+      <path d="M0,6 L7,0 L14,6 L7,12 z" fill="white" stroke="#1a1a2e" stroke-width="1.5"/>
+    </marker>
+    <!-- Filled diamond for composition -->
+    <marker id="comp" viewBox="0 0 14 12" refX="0" refY="6" markerWidth="16" markerHeight="14" orient="auto">
+      <path d="M0,6 L7,0 L14,6 L7,12 z" fill="#1a1a2e"/>
+    </marker>
+    <!-- Open arrow for association -->
+    <marker id="assoc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0,0 L10,5 L0,10" fill="none" stroke="#1a1a2e" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="750" y="32" text-anchor="middle" font-size="22" font-weight="bold" fill="#003f7f">
+    Lottery Purchase System (LPS) — UML Class Diagram
+  </text>
+  <text x="750" y="54" text-anchor="middle" font-size="13" fill="#5a6478">
+    CS3365 — Team 9 — Phase 2
+  </text>
+
+  <!-- === === ===  User (abstract base) === === ===  -->
+  <g>
+    <rect x="600" y="90" width="280" height="200" fill="#fff8e1" stroke="#003f7f" stroke-width="2"/>
+    <rect x="600" y="90" width="280" height="44" fill="#003f7f"/>
+    <text x="740" y="108" text-anchor="middle" font-size="11" fill="#ffb81c" font-style="italic">«abstract»</text>
+    <text x="740" y="126" text-anchor="middle" font-size="14" fill="white" font-weight="bold" font-style="italic">User</text>
+    <line x1="600" y1="134" x2="880" y2="134" stroke="#003f7f"/>
+    <text x="610" y="152" font-size="11">- userId: String</text>
+    <text x="610" y="168" font-size="11">- name: String</text>
+    <text x="610" y="184" font-size="11">- email: String</text>
+    <text x="610" y="200" font-size="11">- address: String</text>
+    <text x="610" y="216" font-size="11">- phone: String</text>
+    <text x="610" y="232" font-size="11">- passwordHash: String</text>
+    <line x1="600" y1="240" x2="880" y2="240" stroke="#003f7f"/>
+    <text x="610" y="258" font-size="11">+ login(email, pw): Boolean</text>
+    <text x="610" y="274" font-size="11">+ logout(): void</text>
+  </g>
+
+  <!-- === === ===  Customer === === ===  -->
+  <g>
+    <rect x="280" y="370" width="290" height="252" fill="#e3f2fd" stroke="#003f7f" stroke-width="2"/>
+    <rect x="280" y="370" width="290" height="32" fill="#003f7f"/>
+    <text x="425" y="392" text-anchor="middle" font-size="14" fill="white" font-weight="bold">Customer</text>
+    <line x1="280" y1="402" x2="570" y2="402" stroke="#003f7f"/>
+    <text x="290" y="420" font-size="11">- registrationDate: Date</text>
+    <text x="290" y="436" font-size="11">- preferredPayment: PaymentMethod</text>
+    <line x1="280" y1="444" x2="570" y2="444" stroke="#003f7f"/>
+    <text x="290" y="462" font-size="11">+ register(name, email, addr, ph, pw)</text>
+    <text x="290" y="478" font-size="11">+ browseTickets(): List&lt;Ticket&gt;</text>
+    <text x="290" y="494" font-size="11">+ searchTicket(query): List&lt;Ticket&gt;</text>
+    <text x="290" y="510" font-size="11">+ viewTicketDetails(t): Ticket</text>
+    <text x="290" y="526" font-size="11">+ purchaseTicket(t, qty, pm): Order</text>
+    <text x="290" y="542" font-size="11">+ pickNumbers(): int[5]</text>
+    <text x="290" y="558" font-size="11">+ autoPickNumbers(): int[5]</text>
+    <text x="290" y="574" font-size="11">+ viewOrderHistory(): List&lt;Order&gt;</text>
+    <text x="290" y="590" font-size="11">+ claimWinnings(o): boolean</text>
+    <text x="290" y="606" font-size="11">+ viewWinningNumbers(): List&lt;Draw&gt;</text>
+  </g>
+
+  <!-- === === ===  Admin === === ===  -->
+  <g>
+    <rect x="940" y="370" width="290" height="252" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+    <rect x="940" y="370" width="290" height="32" fill="#c62828"/>
+    <text x="1085" y="392" text-anchor="middle" font-size="14" fill="white" font-weight="bold">Admin</text>
+    <line x1="940" y1="402" x2="1230" y2="402" stroke="#c62828"/>
+    <text x="950" y="420" font-size="11">- adminId: String</text>
+    <text x="950" y="436" font-size="11">- accessLevel: int</text>
+    <line x1="940" y1="444" x2="1230" y2="444" stroke="#c62828"/>
+    <text x="950" y="462" font-size="11">+ getSystemStatus(): SystemStats</text>
+    <text x="950" y="478" font-size="11">+ addTicket(name, price, prize): Ticket</text>
+    <text x="950" y="494" font-size="11">+ removeTicket(t): void</text>
+    <text x="950" y="510" font-size="11">+ editTicketPrice(t, price): void</text>
+    <text x="950" y="526" font-size="11">+ editWinningAmount(t, amt): void</text>
+    <text x="950" y="542" font-size="11">+ runDraw(t): Draw</text>
+    <text x="950" y="558" font-size="11">+ viewAllOrders(): List&lt;Order&gt;</text>
+    <text x="950" y="574" font-size="11">+ viewTotalRevenue(): double</text>
+    <text x="950" y="590" font-size="11">+ viewTicketsSold(): int</text>
+  </g>
+
+  <!-- Inheritance lines from Customer/Admin -> User -->
+  <line x1="425" y1="370" x2="700" y2="290" stroke="#1a1a2e" stroke-width="1.5" marker-end="url(#inherit)"/>
+  <line x1="1085" y1="370" x2="780" y2="290" stroke="#1a1a2e" stroke-width="1.5" marker-end="url(#inherit)"/>
+
+  <!-- === === ===  Order === === ===  -->
+  <g>
+    <rect x="40" y="740" width="280" height="232" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+    <rect x="40" y="740" width="280" height="32" fill="#2e7d32"/>
+    <text x="180" y="762" text-anchor="middle" font-size="14" fill="white" font-weight="bold">Order</text>
+    <line x1="40" y1="732" x2="320" y2="732" stroke="#2e7d32"/>
+    <text x="50" y="750" font-size="11">- orderId: String</text>
+    <text x="50" y="766" font-size="11">- ticketType: String</text>
+    <text x="50" y="782" font-size="11">- quantity: int</text>
+    <text x="50" y="798" font-size="11">- unitPrice: double</text>
+    <text x="50" y="814" font-size="11">- totalCost: double</text>
+    <text x="50" y="830" font-size="11">- purchaseDate: DateTime</text>
+    <text x="50" y="846" font-size="11">- status: OrderStatus</text>
+    <text x="50" y="862" font-size="11">- totalWinnings: double</text>
+    <text x="50" y="878" font-size="11">- claimed: boolean</text>
+    <line x1="40" y1="886" x2="320" y2="886" stroke="#2e7d32"/>
+    <text x="50" y="904" font-size="11">+ calculateTotal(): double</text>
+    <text x="50" y="920" font-size="11">+ evaluateAgainstDraw(d): void</text>
+  </g>
+
+  <!-- === === ===  PurchasedTicket === === ===  -->
+  <g>
+    <rect x="380" y="700" width="270" height="180" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2"/>
+    <rect x="380" y="700" width="270" height="32" fill="#6a1b9a"/>
+    <text x="515" y="722" text-anchor="middle" font-size="14" fill="white" font-weight="bold">PurchasedTicket</text>
+    <line x1="380" y1="732" x2="650" y2="732" stroke="#6a1b9a"/>
+    <text x="390" y="750" font-size="11">- confirmationNumber: String</text>
+    <text x="390" y="766" font-size="11">- numbers: int[5]</text>
+    <text x="390" y="782" font-size="11">- matches: int</text>
+    <text x="390" y="798" font-size="11">- winnings: double</text>
+    <line x1="380" y1="806" x2="650" y2="806" stroke="#6a1b9a"/>
+    <text x="390" y="824" font-size="11">+ countMatches(drawn): int</text>
+    <text x="390" y="840" font-size="11">+ calculatePrize(jackpot): double</text>
+    <text x="390" y="856" font-size="11">+ display(): String</text>
+  </g>
+
+  <!-- === === ===  Ticket === === ===  -->
+  <g>
+    <rect x="710" y="700" width="270" height="180" fill="#fff3e0" stroke="#ef6c00" stroke-width="2"/>
+    <rect x="710" y="700" width="270" height="32" fill="#ef6c00"/>
+    <text x="845" y="722" text-anchor="middle" font-size="14" fill="white" font-weight="bold">Ticket</text>
+    <line x1="710" y1="732" x2="980" y2="732" stroke="#ef6c00"/>
+    <text x="720" y="750" font-size="11">- ticketId: String</text>
+    <text x="720" y="766" font-size="11">- name: String</text>
+    <text x="720" y="782" font-size="11">- price: double</text>
+    <text x="720" y="798" font-size="11">- winningAmount: double</text>
+    <text x="720" y="814" font-size="11">- active: boolean</text>
+    <text x="720" y="830" font-size="11">- numberRange: int = 50</text>
+    <line x1="710" y1="838" x2="980" y2="838" stroke="#ef6c00"/>
+    <text x="720" y="856" font-size="11">+ activate() / deactivate(): void</text>
+  </g>
+
+  <!-- === === ===  Draw === === ===  -->
+  <g>
+    <rect x="1040" y="700" width="270" height="160" fill="#e1f5fe" stroke="#0277bd" stroke-width="2"/>
+    <rect x="1040" y="700" width="270" height="32" fill="#0277bd"/>
+    <text x="1175" y="722" text-anchor="middle" font-size="14" fill="white" font-weight="bold">Draw</text>
+    <line x1="1040" y1="732" x2="1310" y2="732" stroke="#0277bd"/>
+    <text x="1050" y="750" font-size="11">- drawId: String</text>
+    <text x="1050" y="766" font-size="11">- ticketType: String</text>
+    <text x="1050" y="782" font-size="11">- winningNumbers: int[5]</text>
+    <text x="1050" y="798" font-size="11">- drawDate: Date</text>
+    <line x1="1040" y1="806" x2="1310" y2="806" stroke="#0277bd"/>
+    <text x="1050" y="824" font-size="11">+ generateNumbers(): int[5]</text>
+    <text x="1050" y="840" font-size="11">+ notifyWinners(): void</text>
+  </g>
+
+  <!-- === === ===  Notification (utility class for emails) === === ===  -->
+  <g>
+    <rect x="1250" y="370" width="220" height="120" fill="#fafafa" stroke="#5a6478" stroke-width="2"/>
+    <rect x="1250" y="370" width="220" height="32" fill="#5a6478"/>
+    <text x="1360" y="392" text-anchor="middle" font-size="14" fill="white" font-weight="bold">EmailNotifier</text>
+    <line x1="1250" y1="402" x2="1470" y2="402" stroke="#5a6478"/>
+    <text x="1260" y="420" font-size="11">- smtpServer: String</text>
+    <line x1="1250" y1="428" x2="1470" y2="428" stroke="#5a6478"/>
+    <text x="1260" y="446" font-size="11">+ sendWinNotification(u, o)</text>
+    <text x="1260" y="462" font-size="11">+ sendOrderConfirmation(u, o)</text>
+    <text x="1260" y="478" font-size="11">+ sendRegistrationEmail(u)</text>
+  </g>
+
+  <!-- === === ===  PaymentMethod (enum) === === ===  -->
+  <g>
+    <rect x="40" y="370" width="200" height="130" fill="#fafafa" stroke="#5a6478" stroke-width="2"/>
+    <rect x="40" y="370" width="200" height="44" fill="#5a6478"/>
+    <text x="140" y="388" text-anchor="middle" font-size="11" fill="#ffb81c" font-style="italic">«enumeration»</text>
+    <text x="140" y="406" text-anchor="middle" font-size="14" fill="white" font-weight="bold">PaymentMethod</text>
+    <line x1="40" y1="414" x2="240" y2="414" stroke="#5a6478"/>
+    <text x="50" y="432" font-size="11">PAYPAL</text>
+    <text x="50" y="448" font-size="11">VENMO</text>
+    <text x="50" y="464" font-size="11">BANK_ACCOUNT</text>
+  </g>
+
+  <!-- === === ===  OrderStatus (enum) === === ===  -->
+  <g>
+    <rect x="40" y="540" width="200" height="130" fill="#fafafa" stroke="#5a6478" stroke-width="2"/>
+    <rect x="40" y="540" width="200" height="44" fill="#5a6478"/>
+    <text x="140" y="558" text-anchor="middle" font-size="11" fill="#ffb81c" font-style="italic">«enumeration»</text>
+    <text x="140" y="576" text-anchor="middle" font-size="14" fill="white" font-weight="bold">OrderStatus</text>
+    <line x1="40" y1="584" x2="240" y2="584" stroke="#5a6478"/>
+    <text x="50" y="602" font-size="11">PENDING_DRAW</text>
+    <text x="50" y="618" font-size="11">WINNER</text>
+    <text x="50" y="634" font-size="11">NO_WIN</text>
+    <text x="50" y="650" font-size="11">CLAIMED</text>
+  </g>
+
+  <!-- === === ===  SystemStats === === ===  -->
+  <g>
+    <rect x="1300" y="540" width="180" height="130" fill="#fafafa" stroke="#5a6478" stroke-width="2"/>
+    <rect x="1300" y="540" width="180" height="32" fill="#5a6478"/>
+    <text x="1390" y="562" text-anchor="middle" font-size="14" fill="white" font-weight="bold">SystemStats</text>
+    <line x1="1300" y1="572" x2="1480" y2="572" stroke="#5a6478"/>
+    <text x="1310" y="590" font-size="11">- ticketsSold: int</text>
+    <text x="1310" y="606" font-size="11">- totalRevenue: double</text>
+    <text x="1310" y="622" font-size="11">- userCount: int</text>
+    <text x="1310" y="638" font-size="11">- orderCount: int</text>
+  </g>
+
+  <!-- === === === Relationships === === === -->
+
+  <!-- Customer 1 ===  0..* Order  (composition: orders die with customer) -->
+  <line x1="280" y1="600" x2="180" y2="700" stroke="#1a1a2e" stroke-width="1.5" marker-start="url(#comp)"/>
+  <text x="190" y="660" font-size="11" fill="#1a1a2e">places</text>
+  <text x="160" y="690" font-size="10" fill="#5a6478">0..*</text>
+  <text x="280" y="615" font-size="10" fill="#5a6478">1</text>
+
+  <!-- Order 1 ===   1..10 PurchasedTicket (composition) -->
+  <line x1="320" y1="800" x2="380" y2="800" stroke="#1a1a2e" stroke-width="1.5" marker-start="url(#comp)"/>
+  <text x="325" y="790" font-size="10" fill="#5a6478">1</text>
+  <text x="350" y="790" font-size="10" fill="#5a6478">contains</text>
+  <text x="358" y="816" font-size="10" fill="#5a6478">1..10</text>
+
+  <!-- Order ===  Ticket (association: an order is FOR a ticket type) -->
+  <line x1="320" y1="760" x2="710" y2="760" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="500" y="753" font-size="10" fill="#1a1a2e">for type</text>
+  <text x="325" y="775" font-size="10" fill="#5a6478">0..*</text>
+  <text x="688" y="775" font-size="10" fill="#5a6478">1</text>
+
+  <!-- Order  to  PaymentMethod (association) -->
+  <path d="M 80 700 Q 60 600 120 500" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="40" y="600" font-size="10" fill="#1a1a2e">paid via</text>
+
+  <!-- Order  to  OrderStatus (association) -->
+  <line x1="160" y1="700" x2="170" y2="670" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="170" y="688" font-size="10" fill="#1a1a2e">status</text>
+
+  <!-- Customer  to  PaymentMethod (preferred) -->
+  <line x1="280" y1="436" x2="240" y2="436" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+
+  <!-- Ticket 1  to  0..* Draw (aggregation: ticket has many draws over time) -->
+  <line x1="980" y1="780" x2="1040" y2="780" stroke="#1a1a2e" stroke-width="1.5" marker-start="url(#agg)"/>
+  <text x="985" y="775" font-size="10" fill="#5a6478">1</text>
+  <text x="1018" y="775" font-size="10" fill="#5a6478">0..*</text>
+  <text x="990" y="800" font-size="10" fill="#1a1a2e">drawn for</text>
+
+  <!-- PurchasedTicket  to  Draw (evaluated against) -->
+  <path d="M 650 800 Q 850 950 1175 860" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="850" y="970" font-size="10" fill="#1a1a2e">evaluated against</text>
+
+  <!-- Admin  to  Ticket (manages) -->
+  <path d="M 1000 622 Q 920 660 880 700" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="900" y="660" font-size="10" fill="#1a1a2e">manages</text>
+
+  <!-- Admin  to  Draw (runs) -->
+  <path d="M 1170 622 Q 1200 660 1175 700" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="1190" y="660" font-size="10" fill="#1a1a2e">runs</text>
+
+  <!-- Admin  to  SystemStats (views) -->
+  <line x1="1230" y1="540" x2="1300" y2="600" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="1230" y="580" font-size="10" fill="#1a1a2e">views</text>
+
+  <!-- User  to  EmailNotifier (notified by) -->
+  <line x1="880" y1="200" x2="1250" y2="430" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+  <text x="1080" y="290" font-size="10" fill="#1a1a2e">notifies</text>
+
+  <!-- === === == Legend === === == -->
+  <g transform="translate(40, 1000)">
+    <rect x="0" y="0" width="1420" height="80" fill="white" stroke="#003f7f" stroke-width="1.5"/>
+    <text x="10" y="20" font-size="13" font-weight="bold" fill="#003f7f">UML Notation Legend</text>
+    <line x1="10" y1="40" x2="60" y2="40" stroke="#1a1a2e" stroke-width="1.5" marker-end="url(#inherit)"/>
+    <text x="68" y="44" font-size="11">Inheritance (is-a)</text>
+    <line x1="220" y1="40" x2="270" y2="40" stroke="#1a1a2e" stroke-width="1.5" marker-start="url(#comp)"/>
+    <text x="278" y="44" font-size="11">Composition (whole-part, lifetime-bound)</text>
+    <line x1="540" y1="40" x2="590" y2="40" stroke="#1a1a2e" stroke-width="1.5" marker-start="url(#agg)"/>
+    <text x="598" y="44" font-size="11">Aggregation (has-a, independent)</text>
+    <line x1="830" y1="40" x2="880" y2="40" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#assoc)"/>
+    <text x="888" y="44" font-size="11">Association / Dependency</text>
+    <text x="1090" y="44" font-size="11" font-style="italic">«abstract» = abstract class &#160;&#160; «enumeration» = enum</text>
+    <text x="10" y="64" font-size="10" fill="#5a6478">Multiplicities: 1, 0..*, 1..10 indicate how many instances of one class associate with another. + = public, - = private.</text>
+  </g>
+</svg>

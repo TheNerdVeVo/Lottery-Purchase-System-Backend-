@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Order History{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Order History</h2>
+  {% if orders %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Ticket</th>
+        <th>Qty</th>
+        <th>Total</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><code>{{ o.order_id }}</code></td>
+        <td>{{ o.ticket_name }}</td>
+        <td>{{ o.quantity }}</td>
+        <td>${{ '%.2f' | format(o.total_cost) }}</td>
+        <td>{{ o.purchase_date[:10] }}</td>
+        <td>
+          {% if o.status == 'winner' %}
+            <span class="badge badge-winner">★ Winner!</span>
+          {% elif o.status == 'pending_draw' %}
+            <span class="badge badge-pending">Pending Draw</span>
+          {% else %}
+            <span class="badge badge-no-win">No Win</span>
+          {% endif %}
+          {% if o.claimed %}<span class="badge badge-claimed">Claimed</span>{% endif %}
+        </td>
+        <td><a href="{{ url_for('order_detail', order_id=o.order_id) }}" class="btn btn-sm">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">You haven't purchased any tickets yet.</p>
+  <a href="{{ url_for('browse') }}" class="btn mt-2">Browse Tickets</a>
+  {% endif %}
+</div>
+{% endblock %}

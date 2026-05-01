@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.name }} &middot; Texas LPS{% endblock %}
+{% block content %}
+<div class="card">
+  <a href="{{ url_for('browse') }}" class="btn btn-secondary btn-sm mb-2">&larr; Back to Browse</a>
+  <div class="ticket-banner {{ ticket.ticket_id|lower }}" style="border-radius: 12px; margin-bottom: 24px;">
+    <h2 style="color: white;">{{ ticket.name }}</h2>
+    <div class="ticket-jackpot">${{ '{:,.0f}'.format(ticket.winning_amount) }}</div>
+    <small>Top Prize</small>
+  </div>
+
+  <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; gap: 22px;">
+    <div>
+      <div class="text-muted" style="font-size: 0.85rem;">Ticket Price</div>
+      <div style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">${{ '%.2f' | format(ticket.price) }}</div>
+    </div>
+    <div>
+      <div class="text-muted" style="font-size: 0.85rem;">Number Range</div>
+      <div style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">1 – 50</div>
+    </div>
+    <div>
+      <div class="text-muted" style="font-size: 0.85rem;">Next Drawing</div>
+      <div style="font-size: 1.4rem; font-weight: 700; color: var(--primary-dark);">{{ next_draw }}</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 28px; color: var(--primary-dark);">How Winnings Are Calculated</h3>
+  <table class="table mt-2">
+    <thead>
+      <tr><th>Numbers Matched</th><th>Prize</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>5 of 5</td><td><strong>100% of jackpot</strong></td></tr>
+      <tr><td>4 of 5</td><td>20% of jackpot</td></tr>
+      <tr><td>3 of 5</td><td>5% of jackpot</td></tr>
+      <tr><td>2 of 5</td><td>1% of jackpot</td></tr>
+      <tr><td>1 of 5</td><td>No prize</td></tr>
+    </tbody>
+  </table>
+
+  <div class="row-flex mt-2">
+    <a href="{{ url_for('purchase', ticket_id=ticket.ticket_id) }}" class="btn btn-accent">Buy This Ticket</a>
+    <a href="{{ url_for('browse') }}" class="btn btn-secondary">View Other Tickets</a>
+  </div>
+</div>
+{% endblock %}

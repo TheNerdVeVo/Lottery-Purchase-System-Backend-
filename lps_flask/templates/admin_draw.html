@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Drawings{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Lottery Drawings</h2>
+  <p class="text-muted">Run the weekly draw for each ticket type. Customers' orders will be evaluated against the latest draw.</p>
+
+  <table class="table mt-2">
+    <thead>
+      <tr>
+        <th>Ticket</th>
+        <th>Latest Winning Numbers</th>
+        <th>Last Drawn</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in draws %}
+      <tr>
+        <td><strong>{{ d.ticket_name }}</strong></td>
+        <td>
+          <div class="numbers">
+            {% for n in d.numbers %}<span class="ball">{{ n }}</span>{% endfor %}
+          </div>
+        </td>
+        <td>{{ d.draw_date }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('admin_draw') }}" class="inline-form" onsubmit="return confirm('Run new draw for {{ d.ticket_name }}?');">
+            <input type="hidden" name="ticket_id" value="{{ d.ticket_id }}">
+            <button type="submit" class="btn btn-sm btn-accent">Run New Draw</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

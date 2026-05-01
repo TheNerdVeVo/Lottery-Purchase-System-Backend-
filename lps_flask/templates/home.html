@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Home &middot; Texas LPS{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Welcome back, {{ name.split()[0] }}!</h1>
+  <p>Buy your lottery tickets online, check winning numbers, and claim small prizes — all from one place.</p>
+</div>
+
+<div class="tile-grid">
+  <a href="{{ url_for('browse') }}" class="tile">
+    <div class="tile-icon">🎟️</div>
+    <h3>Browse Tickets</h3>
+    <p>View all available lottery tickets and jackpots.</p>
+  </a>
+  <a href="{{ url_for('winning_numbers') }}" class="tile">
+    <div class="tile-icon">🏆</div>
+    <h3>Winning Numbers</h3>
+    <p>Latest draw results across every ticket type.</p>
+  </a>
+  <a href="{{ url_for('orders') }}" class="tile">
+    <div class="tile-icon">📋</div>
+    <h3>Order History</h3>
+    <p>Review past purchases and check for wins.</p>
+  </a>
+  <a href="{{ url_for('profile') }}" class="tile">
+    <div class="tile-icon">👤</div>
+    <h3>My Profile</h3>
+    <p>View your account information.</p>
+  </a>
+  <a href="{{ url_for('browse') }}" class="tile">
+    <div class="tile-icon">🔍</div>
+    <h3>Search Tickets</h3>
+    <p>Find a specific lottery game by name.</p>
+  </a>
+</div>
+{% endblock %}

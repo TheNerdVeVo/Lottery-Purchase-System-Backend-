@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Winning Numbers{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Latest Winning Numbers</h2>
+  <p class="text-muted mb-2">Most recent draw results across all ticket types.</p>
+
+  {% for d in draws %}
+  <div class="ticket-builder" style="background: white; padding: 20px;">
+    <div class="ticket-builder-header">
+      <strong style="font-size: 1.05rem;">{{ d.ticket_name }}</strong>
+      <span class="text-muted">Drawn: {{ d.draw_date }}</span>
+    </div>
+    <div class="numbers" style="margin-top: 8px;">
+      {% for n in d.numbers %}<span class="ball large">{{ n }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

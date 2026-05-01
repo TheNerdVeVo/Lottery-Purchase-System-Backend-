@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Admin Dashboard</h2>
+  <p class="text-muted">System status and key performance metrics.</p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Tickets Sold</div>
+    <div class="stat-value">{{ stats.tickets_sold }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Revenue</div>
+    <div class="stat-value">${{ '{:,.2f}'.format(stats.revenue) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Registered Customers</div>
+    <div class="stat-value">{{ total_users }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Orders</div>
+    <div class="stat-value">{{ total_orders }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="color: var(--primary-dark);">Quick Actions</h3>
+  <div class="row-flex mt-2">
+    <a href="{{ url_for('admin_tickets') }}" class="btn">Manage Tickets</a>
+    <a href="{{ url_for('admin_add_ticket') }}" class="btn btn-secondary">Add New Ticket</a>
+    <a href="{{ url_for('admin_draw') }}" class="btn btn-secondary">Run Drawing</a>
+    <form method="POST" action="{{ url_for('admin_reset') }}" class="inline-form" onsubmit="return confirm('Reset ALL data? This will log you out.');">
+      <button type="submit" class="btn btn-danger">Reset Demo Data</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
