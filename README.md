@@ -13,9 +13,26 @@ Browser  ──HTTP──▶  Flask (:5000)  ──HTTP+Token──▶  Django (
 
 The Flask app holds **no business state**. The only thing it stores in its own session is the Django auth token and a couple of UI flags (e.g. which order has been "claimed" in the demo).
 
+## Heads-up for macOS users
+
+Two macOS quirks can break the setup. Read these before you start:
+
+**1. Case-insensitive filesystem.** macOS treats `LPS/` and `lps_flask/` as distinct, but earlier versions of this repo had `LPS/` and `lps/` which collided. If after cloning you see Flask files (`app.py`, `templates/`) inside `LPS/` instead of in their own folder, the clone got corrupted. Delete the folder and re-clone:
+
+```bash
+rm -rf Lottery-Purchase-System-Backend-
+git clone https://github.com/chekwube-ononuju/Lottery-Purchase-System-Backend-.git
+```
+
+If it still collides, create a case-sensitive disk image via Disk Utility (File → New Image → Blank Image → Format: Mac OS Extended (Case-sensitive, Journaled)) and clone into `/Volumes/<your-image>` instead.
+
+**2. Port 5000 is taken by AirPlay Receiver.** Flask defaults to port 5000, but macOS hijacks it. When you run `python app.py` and see "Address already in use", disable AirPlay Receiver:
+
+System Settings → General → AirDrop & Handoff → toggle **AirPlay Receiver** off.
+
 ## Setup
 
-You need Python 3.10+. From the repo root:
+You need Python 3.10 or higher (check with `python3 --version`). From the repo root:
 
 ```bash
 python3 -m venv venv
