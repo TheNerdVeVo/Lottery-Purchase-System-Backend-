@@ -14,10 +14,26 @@ urlpatterns = [
     path('api/user-tickets/', views.user_tickets, name='user-tickets'),
     path('api/user-orders/', views.user_orders, name='user-orders'),
     path('api/orders/<int:order_id>/', views.order_detail, name='order-detail'),
+    path('api/orders/<int:order_id>/claim/', views.claim_order, name='claim-order'),
 
     path('api/winning-numbers/', views.winning_numbers, name='winning-numbers'),
 
+    # Phase 3: notifications
+    path('api/notifications/', views.notifications_list, name='notifications-list'),
+    path('api/notifications/unread-count/', views.notifications_unread_count, name='notifications-unread-count'),
+    path('api/notifications/mark-all-read/', views.notifications_mark_all_read, name='notifications-mark-all-read'),
+    path('api/notifications/<uuid:notification_id>/read/', views.notifications_mark_read, name='notifications-mark-read'),
+
+    # Phase 3: wallet
+    path('api/wallet/', views.wallet_balance, name='wallet'),
+    path('api/wallet/topup/', views.wallet_topup, name='wallet-topup'),
+
+    # Phase 3: spending limit
+    path('api/spending-limit/', views.set_spending_limit, name='set-spending-limit'),
+
+    # admin
     path('api/admin-view/', views.admin_view, name='admin-view'),
+    path('api/admin-analytics/', views.admin_analytics, name='admin-analytics'),
     path('api/admin-add-ticket/', views.admin_add_ticket, name='admin-add-ticket'),
     path('api/admin-remove-ticket/', views.admin_remove_ticket, name='admin-remove-ticket'),
     path('api/admin-update-ticket/', views.admin_update_ticket, name='admin-update-ticket'),

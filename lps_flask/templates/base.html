@@ -18,6 +18,7 @@
     <div class="nav-links">
       {% if session.role == 'admin' %}
         <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_analytics') }}">Analytics</a>
         <a href="{{ url_for('admin_tickets') }}">Tickets</a>
         <a href="{{ url_for('admin_draw') }}">Draws</a>
       {% else %}
@@ -25,7 +26,11 @@
         <a href="{{ url_for('browse') }}">Browse</a>
         <a href="{{ url_for('orders') }}">Orders</a>
         <a href="{{ url_for('winning_numbers') }}">Winning Numbers</a>
+        <a href="{{ url_for('wallet') }}">Wallet</a>
         <a href="{{ url_for('profile') }}">Profile</a>
+        <a href="{{ url_for('notifications') }}" class="nav-bell">
+          🔔{% if unread_notifications and unread_notifications > 0 %}<span class="badge">{{ unread_notifications }}</span>{% endif %}
+        </a>
       {% endif %}
       <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
     </div>

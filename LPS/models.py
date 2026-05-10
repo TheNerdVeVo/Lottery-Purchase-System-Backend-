@@ -56,6 +56,12 @@ class CustomerProfile(models.Model):
     # Customer's phone number
     phone_number = models.CharField(max_length = 20)
 
+    # === Phase 3: wallet + spending limits ===
+    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    weekly_spending_limit = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))  # 0 = unlimited
+    spending_window_start = models.DateField(null=True, blank=True)
+    spending_window_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+
     # Display full name of the user
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -83,6 +89,10 @@ class Order(models.Model):
 
     #Timestamp when order is created
     created_at = models.DateTimeField(auto_now_add = True)
+
+    # === Phase 3: persistent claim tracking ===
+    claimed = models.BooleanField(default=False)
+    claimed_at = models.DateTimeField(null=True, blank=True)
 
     # Limit tickets per transaction to 10
     def clean(self):

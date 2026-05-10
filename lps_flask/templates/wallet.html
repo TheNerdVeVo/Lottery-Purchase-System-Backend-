@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Wallet · Texas LPS{% endblock %}
+{% block content %}
+<h1>My Wallet</h1>
+<p>Top up your account to pay for tickets directly from your balance. Prize winnings are automatically credited here when claimed.</p>
+
+<div class="wallet-card">
+  <div class="wallet-label">Available Balance</div>
+  <div class="wallet-balance">${{ "%.2f"|format(balance) }}</div>
+</div>
+
+<div class="card">
+  <h2>Top Up</h2>
+  <form method="POST" action="{{ url_for('wallet') }}">
+    <label for="amount">Amount ($)</label>
+    <input type="number" id="amount" name="amount" min="1" max="1000" step="0.01" required>
+    <p style="color:#666; font-size:0.85rem;">Maximum $1000 per top-up.</p>
+    <button type="submit" class="btn-primary">Top Up</button>
+  </form>
+</div>
+
+<p style="margin-top: 20px;">
+  <a href="{{ url_for('browse') }}">← Back to browse tickets</a>
+</p>
+{% endblock %}
