@@ -1,9 +1,14 @@
 """
 Lottery Purchase System (LPS) - Flask UI
-CS3365 Team 9 - Phase 2
+CS3365 Team 9 - Phase 3
 
-This Flask app is now a thin presentation layer.
-All persistence + business logic lives in the Django REST API at API_BASE.
+Phase 3 adds:
+- In-app notifications (bell + list page)
+- Wallet / account balance (top up, deduct on purchase)
+- Weekly spending limits
+- Admin analytics dashboard with charts
+- Persistent prize claim flow
+- Manual force-win (admin can pick winning numbers)
 """
 import os
 from functools import wraps
@@ -11,17 +16,17 @@ from functools import wraps
 import requests
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    session, flash,
+    session, flash, jsonify,
 )
 
 app = Flask(__name__)
 app.secret_key = "team9-lps-secret"
 
 API_BASE = os.environ.get("LPS_API_BASE", "http://127.0.0.1:8000/api")
-HTTP_TIMEOUT = 10  # seconds
+HTTP_TIMEOUT = 10
 
 
-# ---------- API client helpers ----------
+# ---------- API client ----------
 
 def _headers():
     h = {"Accept": "application/json"}
@@ -31,29 +36,28 @@ def _headers():
     return h
 
 
-def api_get(path, **kwargs):
-    return requests.get(f"{API_BASE}{path}", headers=_headers(), timeout=HTTP_TIMEOUT, **kwargs)
+def api_get(path, **kw):
+    return requests.get(f"{API_BASE}{path}", headers=_headers(), timeout=HTTP_TIMEOUT, **kw)
 
 
-def api_post(path, json=None, **kwargs):
+def api_post(path, json=None, **kw):
     return requests.post(f"{API_BASE}{path}", json=json, headers=_headers(),
-                         timeout=HTTP_TIMEOUT, **kwargs)
+                         timeout=HTTP_TIMEOUT, **kw)
 
 
-def api_put(path, json=None, **kwargs):
+def api_put(path, json=None, **kw):
     return requests.put(f"{API_BASE}{path}", json=json, headers=_headers(),
-                        timeout=HTTP_TIMEOUT, **kwargs)
+                        timeout=HTTP_TIMEOUT, **kw)
 
 
 # ---------- helpers ----------
 
-def _ticket_to_template(game):
-    """Django /lottery-games/ entry -> dict shape Flask templates expect."""
+def _ticket_to_template(g):
     return {
-        "ticket_id": game["game_type"],
-        "name": game["name"],
-        "price": float(game["ticket_price"]),
-        "winning_amount": float(game["prize_amount"]),
+        "ticket_id": g["game_type"],
+        "name": g["name"],
+        "price": float(g["ticket_price"]),
+        "winning_amount": float(g["prize_amount"]),
         "active": True,
     }
 
@@ -93,7 +97,22 @@ def login_required(role=None):
     return decorator
 
 
-# ---------- public auth routes ----------
+# ---------- context processor: notification badge on every page ----------
+
+@app.context_processor
+def inject_globals():
+    unread = 0
+    if session.get("token"):
+        try:
+            r = api_get("/notifications/unread-count/")
+            if r.ok:
+                unread = r.json().get("unread", 0)
+        except Exception:
+            pass
+    return {"unread_notifications": unread}
+
+
+# ---------- public auth ----------
 
 @app.route("/")
 def index():
@@ -117,17 +136,12 @@ def register():
         if not last:
             last = first
 
-        payload = {
-            "username": email,
-            "email": email,
-            "first_name": first,
-            "last_name": last,
-            "home_address": address,
-            "phone_number": phone,
-            "password1": password,
-            "password2": password,
-        }
-        r = api_post("/register/", json=payload)
+        r = api_post("/register/", json={
+            "username": email, "email": email,
+            "first_name": first, "last_name": last,
+            "home_address": address, "phone_number": phone,
+            "password1": password, "password2": password,
+        })
         if r.status_code == 201:
             flash("Account created. Please log in.", "success")
             return redirect(url_for("login"))
@@ -141,7 +155,6 @@ def register():
             first_msg = "Registration failed."
         flash(str(first_msg), "error")
         return redirect(url_for("register"))
-
     return render_template("register.html")
 
 
@@ -150,8 +163,6 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
-
-        # Seeded admin uses username "admin", not email.
         candidates = [email]
         if email == "admin@lps.gov":
             candidates.insert(0, "admin")
@@ -159,24 +170,18 @@ def login():
         for username in candidates:
             r = api_post("/login/", json={"username": username, "password": password})
             if r.ok:
-                data = r.json()
-                session["token"] = data["token"]
-                session["username"] = data["username"]
-                session["email"] = data.get("email", email)
-                session["name"] = (
-                    f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
-                    or data["username"]
-                )
-                session["role"] = "admin" if data.get("is_admin") else "user"
+                d = r.json()
+                session["token"] = d["token"]
+                session["username"] = d["username"]
+                session["email"] = d.get("email", email)
+                session["name"] = (f"{d.get('first_name','')} {d.get('last_name','')}".strip()
+                                   or d["username"])
+                session["role"] = "admin" if d.get("is_admin") else "user"
                 flash("Welcome back!", "success")
-                return redirect(
-                    url_for("admin_dashboard") if session["role"] == "admin"
-                    else url_for("home")
-                )
-
+                return redirect(url_for("admin_dashboard") if session["role"] == "admin"
+                                else url_for("home"))
         flash("Invalid credentials.", "error")
         return redirect(url_for("login"))
-
     return render_template("login.html")
 
 
@@ -205,8 +210,7 @@ def home():
 @login_required()
 def browse():
     q = request.args.get("q", "").strip().lower()
-    games = _all_games()
-    tickets = [_ticket_to_template(g) for g in games]
+    tickets = [_ticket_to_template(g) for g in _all_games()]
     if q:
         tickets = [t for t in tickets if q in t["name"].lower()]
     return render_template("browse.html", tickets=tickets, q=q)
@@ -233,6 +237,15 @@ def purchase(ticket_id):
         return redirect(url_for("browse"))
     ticket = _ticket_to_template(r.json())
 
+    # fetch wallet balance for the form display
+    balance = 0.0
+    try:
+        wb = api_get("/wallet/")
+        if wb.ok:
+            balance = float(wb.json().get("balance", "0"))
+    except Exception:
+        pass
+
     if request.method == "POST":
         try:
             quantity = int(request.form.get("quantity", "1"))
@@ -243,26 +256,21 @@ def purchase(ticket_id):
             return redirect(url_for("purchase", ticket_id=ticket_id))
 
         payment = request.form.get("payment_method", "BK")
-        pmap = {"paypal": "PP", "venmo": "VN", "bank": "BK", "linked bank account": "BK"}
+        pmap = {"paypal": "PP", "venmo": "VN", "bank": "BK", "wallet": "WL",
+                "linked bank account": "BK"}
         payment_code = pmap.get(payment.lower(),
-                                payment if payment in {"PP", "VN", "BK"} else "BK")
+                                payment if payment in {"PP", "VN", "BK", "WL"} else "BK")
 
         items = []
         for i in range(1, quantity + 1):
             raw = request.form.get(f"numbers_{i}", "").strip()
-            items.append({
-                "lottery_type": ticket_id,
-                "numbers": raw,  # blank -> server randomizes
-            })
+            items.append({"lottery_type": ticket_id, "numbers": raw})
 
         resp = api_post("/purchase-tickets/", json={
-            "payment_method": payment_code,
-            "tickets": items,
+            "payment_method": payment_code, "tickets": items,
         })
         if resp.status_code == 201:
-            return redirect(url_for("order_confirmation",
-                                    order_id=resp.json()["order_id"]))
-
+            return redirect(url_for("order_confirmation", order_id=resp.json()["order_id"]))
         try:
             err = resp.json().get("error", "Purchase failed.")
         except Exception:
@@ -270,7 +278,7 @@ def purchase(ticket_id):
         flash(err, "error")
         return redirect(url_for("purchase", ticket_id=ticket_id))
 
-    return render_template("purchase.html", ticket=ticket)
+    return render_template("purchase.html", ticket=ticket, wallet_balance=balance)
 
 
 # ---------- orders ----------
@@ -285,9 +293,6 @@ def _build_order_view(payload, games):
     quantity = len(tickets)
 
     any_winner = any(t["winner"] for t in tickets)
-    has_drawn_signal = any(float(t["prize"]) > 0 or t["winner"] is not False for t in tickets)
-    # We treat winner=True as drawn-and-won; everything else stays "pending"
-    # until a draw runs. A more accurate flag would require an extra API field.
     if any_winner:
         status = "winner"
     else:
@@ -306,13 +311,15 @@ def _build_order_view(payload, games):
         "payment_method": payload["payment_method"],
         "status": status,
         "total_winnings": total_winnings,
-        "claimed": payload["confirmation_number"] in session.get("claimed_orders", []),
+        "claimed": payload.get("claimed", False),
+        "claimed_at": payload.get("claimed_at"),
         "tickets": [
             {
                 "confirmation": t["ticket_number"],
                 "numbers": [int(n) for n in (t["numbers"].split(",") if t["numbers"] else [])
                             if n.strip().lstrip("-").isdigit()],
                 "prize": float(t["prize"]),
+                "is_winner": t["winner"],
             }
             for t in tickets
         ],
@@ -336,7 +343,6 @@ def orders():
     r = api_get("/user-orders/")
     if not r.ok:
         return render_template("orders.html", orders=[])
-
     games = _all_games()
     detailed = []
     for o in r.json():
@@ -375,11 +381,33 @@ def order_detail(order_id):
 @app.route("/claim/<order_id>", methods=["POST"])
 @login_required()
 def claim(order_id):
-    claimed = session.get("claimed_orders", [])
-    if order_id not in claimed:
-        claimed.append(order_id)
-        session["claimed_orders"] = claimed
-    flash("Prize claimed. (Demo: tracked in Flask session.)", "success")
+    """Phase 3: claim is now persistent and credits to wallet."""
+    # resolve confirmation_number -> raw id if needed
+    raw_id = None
+    if order_id.isdigit():
+        raw_id = order_id
+    else:
+        r = api_get("/user-orders/")
+        if r.ok:
+            for o in r.json():
+                if o["confirmation_number"] == order_id:
+                    raw_id = str(o["order_id"])
+                    break
+    if raw_id is None:
+        flash("Order not found.", "error")
+        return redirect(url_for("orders"))
+
+    resp = api_post(f"/orders/{raw_id}/claim/")
+    if resp.ok:
+        d = resp.json()
+        flash(f"Prize claimed! ${d['amount_credited']} credited to your wallet "
+              f"(balance now ${d['new_balance']}).", "success")
+    else:
+        try:
+            err = resp.json().get("error", "Claim failed.")
+        except Exception:
+            err = "Claim failed."
+        flash(err, "error")
     return redirect(url_for("order_detail", order_id=order_id))
 
 
@@ -392,8 +420,7 @@ def winning_numbers():
     raw = r.json() if r.ok else []
     draws = [
         {
-            "ticket_name": d["game"],
-            "ticket_id": d["game_type"],
+            "ticket_name": d["game"], "ticket_id": d["game_type"],
             "draw_date": d["draw_date"],
             "winning_numbers": [int(n) for n in d["winning_numbers"].split(",")
                                 if n.strip().lstrip("-").isdigit()],
@@ -404,7 +431,7 @@ def winning_numbers():
     return render_template("winning_numbers.html", draws=draws)
 
 
-# ---------- profile ----------
+# ---------- profile + wallet + spending limits ----------
 
 @app.route("/profile")
 @login_required()
@@ -414,12 +441,121 @@ def profile():
     user = {
         "name": (f"{data.get('first_name','')} {data.get('last_name','')}".strip()
                  or data.get("username", "")),
+        "first_name": data.get("first_name", ""),
+        "last_name": data.get("last_name", ""),
         "email": data.get("email", ""),
         "address": data.get("home_address", ""),
         "phone": data.get("phone_number", ""),
         "role": "admin" if data.get("is_admin") else "customer",
+        "wallet_balance": float(data.get("wallet_balance", "0")),
+        "weekly_limit": float(data.get("weekly_spending_limit", "0")),
+        "spent_this_week": float(data.get("spending_window_total", "0")),
     }
     return render_template("profile.html", user=user)
+
+
+@app.route("/profile/edit", methods=["GET", "POST"])
+@login_required()
+def profile_edit():
+    if request.method == "POST":
+        full_name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        address = request.form.get("address", "").strip()
+        phone = request.form.get("phone", "").strip()
+
+        if not all([full_name, email, address, phone]):
+            flash("All fields are required.", "error")
+            return redirect(url_for("profile_edit"))
+
+        r = api_post("/profile/", json={
+            "full_name": full_name,
+            "email": email,
+            "home_address": address,
+            "phone_number": phone,
+        })
+        if r.ok:
+            d = r.json()
+            # update Flask session so nav reflects new name/email
+            session["email"] = d.get("email", email)
+            session["name"] = (f"{d.get('first_name','')} {d.get('last_name','')}".strip()
+                               or d.get("username", ""))
+            session["username"] = d.get("username", session.get("username"))
+            flash("Profile updated.", "success")
+            return redirect(url_for("profile"))
+
+        try:
+            err = r.json().get("error", "Update failed.")
+        except Exception:
+            err = "Update failed."
+        flash(err, "error")
+        return redirect(url_for("profile_edit"))
+
+    r = api_get("/profile/")
+    data = r.json() if r.ok else {}
+    user = {
+        "name": (f"{data.get('first_name','')} {data.get('last_name','')}".strip()
+                 or data.get("username", "")),
+        "email": data.get("email", ""),
+        "address": data.get("home_address", ""),
+        "phone": data.get("phone_number", ""),
+    }
+    return render_template("profile_edit.html", user=user)
+
+
+@app.route("/wallet", methods=["GET", "POST"])
+@login_required()
+def wallet():
+    if request.method == "POST":
+        amt = request.form.get("amount", "0").strip()
+        try:
+            float(amt)
+        except ValueError:
+            flash("Invalid amount.", "error")
+            return redirect(url_for("wallet"))
+        r = api_post("/wallet/topup/", json={"amount": amt})
+        if r.ok:
+            flash(r.json().get("message", "Top-up successful."), "success")
+        else:
+            try:
+                err = r.json().get("error", "Top-up failed.")
+            except Exception:
+                err = "Top-up failed."
+            flash(err, "error")
+        return redirect(url_for("wallet"))
+
+    r = api_get("/profile/")
+    data = r.json() if r.ok else {}
+    return render_template("wallet.html",
+                           balance=float(data.get("wallet_balance", "0")))
+
+
+@app.route("/spending_limit", methods=["POST"])
+@login_required()
+def spending_limit():
+    limit = request.form.get("limit", "0").strip()
+    try:
+        float(limit)
+    except ValueError:
+        flash("Invalid limit.", "error")
+        return redirect(url_for("profile"))
+    r = api_post("/spending-limit/", json={"limit": limit})
+    if r.ok:
+        flash(r.json().get("message", "Limit updated."), "success")
+    else:
+        flash("Could not update limit.", "error")
+    return redirect(url_for("profile"))
+
+
+# ---------- notifications ----------
+
+@app.route("/notifications")
+@login_required()
+def notifications():
+    r = api_get("/notifications/")
+    items = r.json() if r.ok else []
+    # silently mark all as read on view
+    api_post("/notifications/mark-all-read/")
+    return render_template("notifications.html", notifications=items)
 
 
 # ---------- admin ----------
@@ -434,13 +570,21 @@ def admin_dashboard():
     s = r.json()
     return render_template(
         "admin_dashboard.html",
-        stats={
-            "tickets_sold": s.get("total_tickets_sold", 0),
-            "revenue": float(s.get("total_revenue", "0")),
-        },
+        stats={"tickets_sold": s.get("total_tickets_sold", 0),
+               "revenue": float(s.get("total_revenue", "0"))},
         total_users=s.get("total_users", 0),
         total_orders=s.get("total_orders", 0),
     )
+
+
+@app.route("/admin/analytics")
+@login_required(role="admin")
+def admin_analytics():
+    r = api_get("/admin-analytics/")
+    if not r.ok:
+        flash("Couldn't load analytics.", "error")
+        return redirect(url_for("admin_dashboard"))
+    return render_template("admin_analytics.html", data=r.json())
 
 
 @app.route("/admin/tickets")
@@ -461,18 +605,14 @@ def admin_add_ticket():
         except ValueError:
             flash("Invalid price or prize amount.", "error")
             return redirect(url_for("admin_add_ticket"))
-
         r = api_post("/admin-add-ticket/", json={
-            "game_type": ticket_id,
-            "ticket_price": str(price),
-            "prize_amount": str(winning),
+            "game_type": ticket_id, "ticket_price": str(price), "prize_amount": str(winning),
         })
         if r.status_code == 201:
             flash(f"Ticket {ticket_id} added.", "success")
             return redirect(url_for("admin_tickets"))
         flash(f"Add failed: {r.text[:120]}", "error")
         return redirect(url_for("admin_add_ticket"))
-
     return render_template("admin_ticket_form.html", action="Add", ticket=None)
 
 
@@ -486,24 +626,20 @@ def admin_edit_ticket(ticket_id):
         except ValueError:
             flash("Invalid price or prize amount.", "error")
             return redirect(url_for("admin_tickets"))
-
         r = api_put("/admin-update-ticket/", json={
-            "game_type": ticket_id,
-            "ticket_price": str(price),
-            "prize_amount": str(winning),
+            "game_type": ticket_id, "ticket_price": str(price), "prize_amount": str(winning),
         })
         if r.ok:
             flash(f"Ticket {ticket_id} updated.", "success")
         else:
             flash(f"Update failed: {r.text[:120]}", "error")
         return redirect(url_for("admin_tickets"))
-
     g = api_get(f"/lottery-games/{ticket_id}/")
     if not g.ok:
         flash("Ticket not found.", "error")
         return redirect(url_for("admin_tickets"))
-    return render_template("admin_ticket_form.html",
-                           action="Edit", ticket=_ticket_to_template(g.json()))
+    return render_template("admin_ticket_form.html", action="Edit",
+                           ticket=_ticket_to_template(g.json()))
 
 
 @app.route("/admin/tickets/remove/<ticket_id>", methods=["POST"])
@@ -522,10 +658,15 @@ def admin_remove_ticket(ticket_id):
 def admin_draw():
     if request.method == "POST":
         ticket_id = request.form.get("ticket_id")
-        r = api_post("/admin-run-draw/", json={"game_type": ticket_id})
+        forced = request.form.get("winning_numbers", "").strip()
+        payload = {"game_type": ticket_id}
+        if forced:
+            payload["winning_numbers"] = forced
+        r = api_post("/admin-run-draw/", json=payload)
         if r.ok:
             d = r.json()
-            flash(f"Draw run: winning numbers {d.get('winning_numbers')}", "success")
+            tag = " (forced)" if d.get("forced") else ""
+            flash(f"Draw run{tag}: winning numbers {d.get('winning_numbers')}", "success")
         else:
             flash(f"Draw failed: {r.text[:120]}", "error")
         return redirect(url_for("admin_draw"))
@@ -542,8 +683,7 @@ def admin_draw():
         gt = g["game_type"]
         latest = by_game.get(gt)
         draws.append({
-            "ticket_id": gt,
-            "ticket_name": g["name"],
+            "ticket_id": gt, "ticket_name": g["name"],
             "draw_date": latest["draw_date"] if latest else "Pending",
             "winning_numbers": (
                 [int(n) for n in latest["winning_numbers"].split(",")

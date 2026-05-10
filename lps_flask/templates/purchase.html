@@ -10,6 +10,15 @@
     <div style="margin-top: 6px; opacity: 0.85;">Pick 5 numbers from 1 to 50</div>
   </div>
 
+  {% if wallet_balance is defined %}
+  <p style="margin-top: 12px; color: #555;">
+    💰 Wallet balance: <strong>${{ "%.2f"|format(wallet_balance) }}</strong>
+    {% if wallet_balance < ticket.price %}
+      &mdash; <a href="{{ url_for('wallet') }}">top up</a> if you'd like to pay from wallet
+    {% endif %}
+  </p>
+  {% endif %}
+
   <form method="POST" action="{{ url_for('purchase', ticket_id=ticket.ticket_id) }}" id="purchaseForm">
     <div class="form-row">
       <div class="form-group">
@@ -20,6 +29,7 @@
         <label for="payment_method">Payment Method</label>
         <select id="payment_method" name="payment_method" required>
           <option value="">-- Select --</option>
+          <option value="wallet">💰 Wallet Balance</option>
           <option value="PayPal">PayPal</option>
           <option value="Venmo">Venmo</option>
           <option value="Bank">Bank Account</option>
@@ -50,46 +60,58 @@ const ticketPrice = {{ ticket.price }};
 const qtyInput = document.getElementById('quantity');
 const container = document.getElementById('ticketsContainer');
 const totalDisplay = document.getElementById('totalDisplay');
+const form = document.getElementById('purchaseForm');
 
 function makeTicketBuilder(idx) {
+  // idx is 0-based, but the backend wants numbers_1, numbers_2, ...
+  const oneIdx = idx + 1;
   const div = document.createElement('div');
   div.className = 'ticket-builder';
   div.innerHTML = `
     <div class="ticket-builder-header">
-      <strong>Ticket #${idx + 1}</strong>
+      <strong>Ticket #${oneIdx}</strong>
       <div class="mode-toggle">
         <button type="button" class="active" data-mode="auto">Auto Pick</button>
         <button type="button" data-mode="manual">Manual</button>
       </div>
     </div>
-    <input type="hidden" name="mode_${idx}" value="auto">
+    <!-- the actual field the backend reads -->
+    <input type="hidden" name="numbers_${oneIdx}" value="" data-role="combined">
     <div class="auto-display">★ Numbers will be randomly generated at purchase time.</div>
     <div class="number-inputs" style="display: none;">
-      ${[0,1,2,3,4].map(j => `<input type="number" name="n${idx}_${j}" min="1" max="50" placeholder="${j+1}" required disabled>`).join('')}
+      ${[0,1,2,3,4].map(j => `<input type="number" data-pos="${j}" min="1" max="50" placeholder="${j+1}" disabled>`).join('')}
     </div>
   `;
   const buttons = div.querySelectorAll('.mode-toggle button');
-  const hidden = div.querySelector(`input[name="mode_${idx}"]`);
+  const combined = div.querySelector('input[data-role="combined"]');
   const autoDisp = div.querySelector('.auto-display');
   const numInputs = div.querySelector('.number-inputs');
-  const inputs = numInputs.querySelectorAll('input');
+  const inputs = numInputs.querySelectorAll('input[data-pos]');
+
+  function syncCombined() {
+    const vals = [...inputs].map(i => i.value.trim()).filter(v => v !== '');
+    combined.value = vals.join(',');
+  }
+
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
       buttons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const mode = btn.dataset.mode;
-      hidden.value = mode;
       if (mode === 'manual') {
         autoDisp.style.display = 'none';
         numInputs.style.display = 'flex';
-        inputs.forEach(i => { i.disabled = false; i.required = true; });
+        inputs.forEach(i => { i.disabled = false; });
+        syncCombined();
       } else {
         autoDisp.style.display = 'flex';
         numInputs.style.display = 'none';
-        inputs.forEach(i => { i.disabled = true; i.required = false; });
+        inputs.forEach(i => { i.disabled = true; });
+        combined.value = '';  // empty -> server randomizes
       }
     });
   });
+  inputs.forEach(i => i.addEventListener('input', syncCombined));
   return div;
 }
 

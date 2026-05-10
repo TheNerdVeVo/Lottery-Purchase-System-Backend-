@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Notifications · Texas LPS{% endblock %}
+{% block content %}
+<h1>Notifications</h1>
+<p>Updates about your purchases, draw results, and prize claims.</p>
+
+{% if notifications %}
+<ul class="notif-list">
+  {% for n in notifications %}
+    <li class="notif-item {{ n.type }} {% if not n.is_read %}unread{% endif %}">
+      <div>
+        {% if n.type == 'winner' %}🏆{% elif n.type == 'purchase' %}🎟{% elif n.type == 'draw_result' %}🎲{% else %}🔔{% endif %}
+        {{ n.message }}
+      </div>
+      <div class="notif-meta">
+        {{ n.date_sent[:10] }} {{ n.date_sent[11:16] }}
+        {% if n.order_id %}
+          · <a href="{{ url_for('order_detail', order_id=n.order_id) }}">View order</a>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="card">
+  <p>No notifications yet. They'll appear here when you make a purchase or a draw is completed.</p>
+</div>
+{% endif %}
+{% endblock %}

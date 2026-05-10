@@ -8,8 +8,8 @@
 
   <div style="margin-top: 18px;">
     {% if order.status == 'winner' %}
-      <div class="flash flash-success" style="font-size: 1.05rem;">
-        🎉 <strong>Congratulations!</strong> You won <strong>${{ '%.2f' | format(order.total_winnings) }}</strong>!
+      <div class="win-banner">
+        🎉 Congratulations! You won <strong>${{ '%.2f' | format(order.total_winnings) }}</strong>!
       </div>
     {% elif order.status == 'pending_draw' %}
       <div class="flash flash-warning">⏳ Drawing pending. Check back after the next draw.</div>
@@ -18,79 +18,33 @@
     {% endif %}
   </div>
 
-  {% if order.tickets and order.tickets[0].winning_numbers is defined %}
-  <h3 style="margin-top: 18px; color: var(--primary-dark);">Winning Numbers</h3>
-  <div class="numbers mb-2">
-    {% for n in order.tickets[0].winning_numbers %}<span class="ball large">{{ n }}</span>{% endfor %}
-  </div>
-  {% endif %}
-
-  <h3 style="color: var(--primary-dark);">Your Tickets</h3>
+  <h3 style="color: var(--primary-dark); margin-top: 20px;">Your Tickets</h3>
   {% for t in order.tickets %}
   <div class="ticket-builder" style="background: white;">
     <div class="ticket-builder-header">
       <strong>Confirmation #{{ t.confirmation }}</strong>
-      {% if t.matches is defined %}
-        <span class="badge {% if t.matches >= 2 %}badge-winner{% else %}badge-no-win{% endif %}">
-          {{ t.matches }} match{{ 'es' if t.matches != 1 else '' }}
-          {% if t.winnings %} &middot; ${{ '%.2f' | format(t.winnings) }}{% endif %}
-        </span>
+      {% if t.is_winner %}
+        <span class="badge badge-winner">🏆 Winner &middot; ${{ '%.2f' | format(t.prize) }}</span>
       {% endif %}
     </div>
     <div class="numbers">
-      {% for n in t.numbers %}
-        {% set winning = t.winning_numbers if t.winning_numbers is defined else [] %}
-        <span class="ball {% if n in winning %}match{% endif %}">{{ n }}</span>
-      {% endfor %}
+      {% for n in t.numbers %}<span class="ball">{{ n }}</span>{% endfor %}
     </div>
   </div>
   {% endfor %}
 
   {% if order.status == 'winner' and not order.claimed %}
-    {% if order.total_winnings < 600 %}
     <div class="card mt-2" style="background: #fff8e1; border: 2px solid var(--accent);">
       <h3 style="color: var(--primary-dark);">Claim Your Winnings</h3>
-      <p>Deposit <strong>${{ '%.2f' | format(order.total_winnings) }}</strong> directly to your {{ order.payment_method }} account.</p>
-      <button onclick="claimPrize('{{ order.order_id }}')" class="btn btn-accent mt-2" id="claimBtn">Claim Now</button>
-      <div id="claimMsg" style="margin-top: 10px;"></div>
+      <p>Click below to credit <strong>${{ '%.2f' | format(order.total_winnings) }}</strong> directly to your wallet balance.</p>
+      <form method="POST" action="{{ url_for('claim', order_id=order.order_id) }}">
+        <button type="submit" class="btn btn-accent mt-2">Claim Now</button>
+      </form>
     </div>
-    {% else %}
-    <div class="card mt-2" style="background: #fff3e0; border: 2px solid var(--warning);">
-      <h3 style="color: var(--warning);">Prize Over $600</h3>
-      <p>Prizes of $600 or more must be claimed at a local Texas Lottery claiming center. Bring your electronic ticket and a valid photo ID.</p>
-    </div>
-    {% endif %}
   {% elif order.claimed %}
     <div class="card mt-2" style="background: #e8f5e9; border: 2px solid var(--success);">
-      <strong>✓ Prize claimed</strong> &middot; Funds deposited to {{ order.payment_method }}.
+      <strong>✓ Prize claimed</strong>{% if order.claimed_at %} on {{ order.claimed_at[:10] }}{% endif %} &middot; Funds credited to your wallet.
     </div>
   {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-async function claimPrize(orderId) {
-  const btn = document.getElementById('claimBtn');
-  const msg = document.getElementById('claimMsg');
-  btn.disabled = true;
-  btn.textContent = 'Processing...';
-  try {
-    const res = await fetch(`/claim/${orderId}`, { method: 'POST' });
-    const data = await res.json();
-    if (data.ok) {
-      msg.innerHTML = `<div class="flash flash-success">${data.msg}</div>`;
-      setTimeout(() => location.reload(), 1500);
-    } else {
-      msg.innerHTML = `<div class="flash flash-error">${data.msg}</div>`;
-      btn.disabled = false;
-      btn.textContent = 'Claim Now';
-    }
-  } catch (e) {
-    msg.innerHTML = `<div class="flash flash-error">Network error</div>`;
-    btn.disabled = false;
-    btn.textContent = 'Claim Now';
-  }
-}
-</script>
 {% endblock %}

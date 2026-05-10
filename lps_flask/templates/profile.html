@@ -2,7 +2,10 @@
 {% block title %}My Profile{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>My Profile</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <h2 style="margin:0;">My Profile</h2>
+    <a href="{{ url_for('profile_edit') }}" class="btn-primary" style="text-decoration:none; padding:10px 20px; border-radius:6px;">Edit Profile</a>
+  </div>
   <table class="table mt-2">
     <tbody>
       <tr><th style="width: 200px; background: #f5f7fa; color: var(--primary-dark);">Name</th><td>{{ user.name }}</td></tr>
@@ -10,7 +13,31 @@
       <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Address</th><td>{{ user.address }}</td></tr>
       <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Phone</th><td>{{ user.phone }}</td></tr>
       <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Account Type</th><td>{{ user.role|capitalize }}</td></tr>
+      <tr><th style="background: #f5f7fa; color: var(--primary-dark);">Wallet Balance</th><td><strong>${{ "%.2f"|format(user.wallet_balance) }}</strong> &mdash; <a href="{{ url_for('wallet') }}">manage</a></td></tr>
     </tbody>
   </table>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <h2>Responsible Play: Weekly Spending Limit</h2>
+  <p>Set a maximum amount you can spend per week on tickets. Set to 0 for no limit.</p>
+
+  {% if user.weekly_limit > 0 %}
+    <p>
+      <strong>Current limit:</strong> ${{ "%.2f"|format(user.weekly_limit) }} per week<br>
+      <strong>Spent this week:</strong> ${{ "%.2f"|format(user.spent_this_week) }} of ${{ "%.2f"|format(user.weekly_limit) }}
+    </p>
+    <div class="spending-bar-bg">
+      <div class="spending-bar-fill" style="width: {{ (user.spent_this_week / user.weekly_limit * 100) if user.weekly_limit else 0 }}%;"></div>
+    </div>
+  {% else %}
+    <p><em>No limit set.</em></p>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('spending_limit') }}" style="margin-top: 16px;">
+    <label for="limit">Weekly limit ($)</label>
+    <input type="number" id="limit" name="limit" min="0" step="1" value="{{ user.weekly_limit|int }}" required>
+    <button type="submit" class="btn-primary">Update Limit</button>
+  </form>
 </div>
 {% endblock %}

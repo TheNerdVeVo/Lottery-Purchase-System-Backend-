@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Edit Profile</h2>
+  <p class="text-muted">Update your account details. Your password is not editable here &mdash; if you need to reset it, contact an administrator.</p>
+
+  <form method="POST" action="{{ url_for('profile_edit') }}">
+    <div class="form-group">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" value="{{ user.name }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="{{ user.email }}" required>
+      <p style="color:#666; font-size:0.85rem; margin-top:4px;">
+        Note: changing your email also changes your login username.
+      </p>
+    </div>
+
+    <div class="form-group">
+      <label for="address">Address</label>
+      <input type="text" id="address" name="address" value="{{ user.address }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" name="phone" value="{{ user.phone }}" required>
+    </div>
+
+    <div class="row-flex mt-2" style="padding-top: 16px; border-top: 2px solid var(--border);">
+      <a href="{{ url_for('profile') }}" class="btn btn-secondary">Cancel</a>
+      <div class="spacer"></div>
+      <button type="submit" class="btn btn-accent">Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

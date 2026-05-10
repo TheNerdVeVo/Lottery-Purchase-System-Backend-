@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card">
   <h2>Lottery Drawings</h2>
-  <p class="text-muted">Run the weekly draw for each ticket type. Customers' orders will be evaluated against the latest draw.</p>
+  <p class="text-muted">Run the weekly draw for each ticket type. Leave the winning numbers field blank to roll random numbers, or enter specific numbers (comma-separated) to force a result &mdash; useful for demos.</p>
 
   <table class="table mt-2">
     <thead>
@@ -11,6 +11,7 @@
         <th>Ticket</th>
         <th>Latest Winning Numbers</th>
         <th>Last Drawn</th>
+        <th>Force Numbers (optional)</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -20,19 +21,38 @@
         <td><strong>{{ d.ticket_name }}</strong></td>
         <td>
           <div class="numbers">
-            {% for n in d.numbers %}<span class="ball">{{ n }}</span>{% endfor %}
+            {% if d.winning_numbers %}
+              {% for n in d.winning_numbers %}<span class="ball">{{ n }}</span>{% endfor %}
+            {% else %}
+              <span class="text-muted">No draws yet</span>
+            {% endif %}
           </div>
         </td>
         <td>{{ d.draw_date }}</td>
         <td>
-          <form method="POST" action="{{ url_for('admin_draw') }}" class="inline-form" onsubmit="return confirm('Run new draw for {{ d.ticket_name }}?');">
+          <form method="POST" action="{{ url_for('admin_draw') }}" class="inline-form" onsubmit="return confirm('Run new draw for {{ d.ticket_name }}?');" style="display:flex; gap:6px;">
             <input type="hidden" name="ticket_id" value="{{ d.ticket_id }}">
-            <button type="submit" class="btn btn-sm btn-accent">Run New Draw</button>
+            <input type="text" name="winning_numbers" placeholder="e.g. 1,2,3,4,5" style="width: 130px;" pattern="^(\s*\d+\s*,)*\s*\d+\s*$" title="Comma-separated numbers like 1,2,3,4,5">
+            <button type="submit" class="btn btn-sm btn-accent">Run Draw</button>
           </form>
         </td>
+        <td></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+</div>
+
+<div class="card" style="margin-top: 24px; background: #fffbef; border-left: 5px solid #ffb414;">
+  <h3>📌 Demo Tip</h3>
+  <p>To showcase the full winner flow to a grader:</p>
+  <ol>
+    <li>Register a test customer account</li>
+    <li>Login as them and buy a ticket with manual numbers, e.g. <code>1,2,3,4,5</code></li>
+    <li>Logout, login as admin (this page)</li>
+    <li>Enter <code>1,2,3,4,5</code> in the Force Numbers field for that game and run the draw</li>
+    <li>Login back as the test customer &mdash; they'll get a winner notification, and the order page will show "Claim Prize"</li>
+    <li>Click claim &mdash; winnings are credited to the customer's wallet</li>
+  </ol>
 </div>
 {% endblock %}

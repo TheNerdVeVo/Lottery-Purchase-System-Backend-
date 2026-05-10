@@ -1,6 +1,6 @@
-# Lottery Purchase System (LPS) — Integrated
+# Lottery Purchase System (LPS) — Phase 3
 
-CS3365 Team 9, Phase 2.
+CS3365 Team 9.
 
 The system is split into two cooperating processes:
 
@@ -11,7 +11,32 @@ The system is split into two cooperating processes:
 Browser  ──HTTP──▶  Flask (:5000)  ──HTTP+Token──▶  Django (:8000)  ──ORM──▶  SQLite
 ```
 
-The Flask app holds **no business state**. The only thing it stores in its own session is the Django auth token and a couple of UI flags (e.g. which order has been "claimed" in the demo).
+The Flask app holds **no business state**. The only thing it stores in its own session is the Django auth token.
+
+## Phase 3 features
+
+Phase 3 builds five new capabilities on top of the Phase 2 integration:
+
+1. **In-app notifications.** Every user has a notification feed. A bell icon in the navbar shows unread count. Notifications fire on purchase, draw results (winner / no-win), wallet top-ups, and prize claims. Visit `/notifications` to read them; opening the page marks all unread as read.
+
+2. **Wallet / account balance.** Users can top up their wallet at `/wallet` and select "💰 Wallet Balance" as a payment method on purchase. Tickets are charged against the balance. Prize claims credit the wallet automatically.
+
+3. **Weekly spending limits.** Users can cap their weekly spend on the profile page. The system tracks a 7-day rolling window. Purchases that would exceed the limit are blocked at the API with a clear error message ("Purchase blocked: would exceed your weekly spending limit of $X. You have $Y left this week.").
+
+4. **Admin analytics dashboard.** A new `/admin/analytics` page renders five Chart.js visualizations: tickets sold by game (bar), revenue by game (doughnut), daily revenue over the last 14 days (line), win rate by game (bar), and prize claims claimed-vs-unclaimed (doughnut). A breakdown table sits below the charts.
+
+5. **Persistent prize claims.** Phase 2's "claim" lived only in the Flask session. Phase 3 adds a `claimed` field to the `Order` model and a `POST /api/orders/<id>/claim/` endpoint. Claims survive logout, credit the user's wallet, and trigger a notification.
+
+### Demo aid: admin force-win
+
+To demonstrate the full winner flow without depending on RNG, admins can specify the winning numbers when running a draw. On `/admin/draw`, the "Force Numbers (optional)" field accepts comma-separated values like `1,2,3,4,5`. Suggested demo script:
+
+1. Register a test customer
+2. As that customer, buy a Powerball ticket with manual numbers `1,2,3,4,5`
+3. Logout, login as `admin@lps.gov` / `admin123`
+4. Go to Draws, type `1,2,3,4,5` into the Force Numbers field for Powerball, click Run
+5. Logout, log back in as the test customer — you'll see a winner notification and a Claim button on the order detail page
+
 
 ## Heads-up for macOS users
 
@@ -104,14 +129,24 @@ All endpoints accept/return JSON. Authenticated endpoints require `Authorization
 | POST | `/api/admin-add-ticket/` | Create a game type — staff only |
 | PUT | `/api/admin-update-ticket/` | Update price / prize — staff only |
 | POST | `/api/admin-remove-ticket/` | Delete a game type — staff only |
-| POST | `/api/admin-run-draw/` | Roll winning numbers + score tickets + publish — staff only |
+| POST | `/api/admin-run-draw/` | Roll winning numbers + score tickets + publish — staff only. Optionally accepts `winning_numbers` to force a result. |
+| GET | `/api/admin-analytics/` | Per-game stats, daily revenue, claims summary — staff only |
+| GET | `/api/notifications/` | Current user's notifications (`?unread=1` to filter) |
+| GET | `/api/notifications/unread-count/` | Unread count for the bell badge |
+| POST | `/api/notifications/<uuid>/read/` | Mark one as read |
+| POST | `/api/notifications/mark-all-read/` | Mark all as read |
+| GET | `/api/wallet/` | Current wallet balance |
+| POST | `/api/wallet/topup/` | Add funds (max $1000 per call) |
+| POST | `/api/spending-limit/` | Set or clear the weekly spending cap |
+| POST | `/api/orders/<id>/claim/` | Persistent claim — credits wallet, fires notification |
 
 ## Notes on the integration
 
 - **Username = email.** New accounts created from the Flask UI use the email as the Django username (Django requires a unique username field). The seeded admin keeps `admin` as username for convenience; the login form auto-tries that when you enter `admin@lps.gov`.
 - **No CSRF in the API path.** The Flask app authenticates via Token, not session cookies, so DRF's CSRF check doesn't apply.
-- **Claim flow is UI-side.** The original Flask app tracked "claimed" prizes in its JSON file. The Django side has no `claimed` field on `Order` yet, so the Flask app stores claims in its own session for the demo. Promoting this to a real DB column is a small follow-up.
-- **Ticket numbers.** When a customer leaves the numbers field blank, `purchase_tickets` calls `generate_random_numbers(game_type)` server-side.
+- **Ticket numbers.** When a customer leaves the numbers field blank, `purchase_tickets` calls `generate_random_numbers(game_type)` server-side. When the customer enters comma-separated numbers, those are stored verbatim.
+- **Wallet payment method.** When the user picks "Wallet" on the purchase form, the Flask app sends `payment_method=WL` to the API, which checks/deducts the balance, then stores the order with `BK` (Bank) so the existing model's choices stay valid. The wallet payment is reflected in the wallet history (top-up + topdown via purchase) rather than in the order's `payment_method` enum.
+- **Spending window.** Each user has a 7-day rolling window stored on `CustomerProfile`. The window resets automatically the first time the user touches a purchase or profile endpoint after the 7-day mark.
 
 ## Reset
 
