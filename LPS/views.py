@@ -70,7 +70,8 @@ def _reset_spending_window_if_stale(profile):
 # -------------------- auth --------------------
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])                     #anyone can create account
+
 def register(request):
     form = CustomerRegistrationForm(request.data)
     if form.is_valid():
@@ -85,33 +86,34 @@ def register(request):
         )
     return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#==================================================
+# Login View
+# Accepts POST requests with username and password
+# Returns success message or error
+#==================================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
+
 def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
+    username = request.data.get('username')         #retrieve username
+    password = request.data.get('password')         #retrieve password
     user = authenticate(request, username=username, password=password)
 
     if user:
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({
-            'message': 'Login successful!',
-            'token': token.key,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email,
-            'is_admin': user.is_staff,
-        })
-    return Response({'error': 'Incorrect username and/or password!'},
-                    status=status.HTTP_401_UNAUTHORIZED)
+        login(request, user)                        #if authentication was successful, start session
+        return Response({'message': 'Login successful!'})
+    return Response({'error': 'Incorrect username and/or password!'}, status=status.HTTP_401_UNAUTHORIZED)
 
-
+#==================================================
+# Logout View
+# Accepts POST requests from authenticated user
+# Ends user session
+#==================================================
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])              #only allow logged in users
+
 def logout_view(request):
-    Token.objects.filter(user=request.user).delete()
+    logout(request)                                 #end user session
     return Response({'message': 'Logged out successfully!'})
 
 
@@ -174,25 +176,29 @@ def profile_view(request):
 
 # -------------------- games --------------------
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
 def get_lottery_games(request):
-    return Response([_serialize_game(g) for g in LotteryTicket.objects.all()])
+    games = LotteryTicket.objects.all()
+    data = [
+        {
+        'game_type': game.game_type,
+        'name': game.get_game_type_display(),
+        'ticket_price': str(game.ticket_price),
+        'prize_amount': str(game.prize_amount),
+        }
+        for game in games
+    ]
+    return Response(data)
 
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def get_lottery_game(request, game_type):
-    g = get_object_or_404(LotteryTicket, game_type=game_type)
-    return Response(_serialize_game(g))
-
-
-# -------------------- purchase --------------------
-
+#==================================================
+# Purchase Tickets View
+# Accepts a POST request with payment method and
+# list of tickets to purchase (max -> 10)
+#==================================================
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+
 def purchase_tickets(request):
-    payment_method = request.data.get('payment_method')
+    payment_method = request.data.get("payment_method")
     tickets = request.data.get('tickets', [])
 
     if not payment_method:
@@ -264,7 +270,7 @@ def purchase_tickets(request):
     order = Order.objects.create(user=request.user, payment_method=payment_method)
 
     for ticket in tickets:
-        lottery_type = ticket.get('lottery_type')
+        lottery_type = ticket.get('lottery_type')   #get type of lottery per ticket
         numbers = ticket.get('numbers') or generate_random_numbers(lottery_type)
         ElectronicTicket.objects.create(
             transaction=order, lottery_type=lottery_type, numbers=numbers,
@@ -297,12 +303,22 @@ def purchase_tickets(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+
 def user_tickets(request):
     orders = Order.objects.filter(user=request.user).prefetch_related('tickets')
     data = []
+
     for order in orders:
-        for t in order.tickets.all():
-            data.append(_serialize_ticket(t, order))
+        for ticket in order.tickets.all():
+            data.append({
+                'ticket_number': ticket.ticket_number,
+                'lottery_type': ticket.get_lottery_type_display(),
+                'numbers': ticket.numbers,
+                'winner': ticket.winner,
+                'prize': str(ticket.calculated_prize),
+                'confirmation_number': order.confirmation_number,
+                'purchased_at': order.created_at,
+            })
     return Response(data)
 
 
@@ -382,18 +398,16 @@ def claim_order(request, order_id):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+
 def winning_numbers(request):
-    draws = LotteryDraw.objects.filter(
-        draw_status=LotteryDraw.DrawStatus.PUBLISHED
-    ).order_by('-draw_date')
-    return Response([
+    draws = LotteryDraw.objects.filter(draw_status=LotteryDraw.DrawStatus.PUBLISHED)
+    data=[
         {
-            'draw_id': d.draw_id,
-            'game_type': d.game.game_type,
-            'game': d.game.get_game_type_display(),
-            'draw_date': d.draw_date.isoformat(),
-            'winning_numbers': d.winning_numbers,
-            'prize_amount': str(d.prize_amount),
+            'draw_id': draw.draw_id,
+            'game': draw.game.get_game_type_display(),
+            'draw_date': draw.draw_date,
+            'winning_numbers': draw.winning_numbers,
+            'prize_amount': str(draw.prize_amount),
         }
         for d in draws
     ])
@@ -515,26 +529,36 @@ def set_spending_limit(request):
 def _admin_required(user):
     return user.is_staff
 
+    return Response(data)
 
+#==================================================
+# Admin View // Total Tickets + Revenue
+# Accepts GET request from verified admin
+# Returns total tickets sold and total revenue
+#==================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+
 def admin_view(request):
-    if not _admin_required(request.user):
+    if not request.user.is_staff:                   #check if the logged in user has admin permissions
         return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
 
-    total_tickets_sold = ElectronicTicket.objects.count()
-    total_revenue = Decimal('0.00')
-    for game in LotteryTicket.objects.all():
-        count = ElectronicTicket.objects.filter(lottery_type=game.game_type).count()
-        total_revenue += count * game.ticket_price
+    total_tickets_sold= ElectronicTicket.objects.count()   #counts total tickets sold    
+    total_revenue=0
 
+    for game in LotteryTicket.objects.all():                #loop to determine count per ticket type and total price per group of tickets
+        count= ElectronicTicket.objects.filter(lottery_type=game.game_type).count()
+        total_revenue+= count*game.ticket_price
+    
+    # Count active ticket types, available games
+    active_ticket_types = LotteryTicket.objects.count()
+    
+    # Return system status report
     return Response({
+        'report_date': now().date(),
         'total_tickets_sold': total_tickets_sold,
         'total_revenue': str(total_revenue),
-        'total_orders': Order.objects.count(),
-        'total_users': User.objects.filter(is_staff=False).count(),
-    })
-
+        'active_ticket_types': active_ticket_types})
 
 # === Phase 3: detailed analytics ===
 @api_view(['GET'])
@@ -601,40 +625,65 @@ def admin_analytics(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+
 def admin_add_ticket(request):
-    if not _admin_required(request.user):
+    if not request.user.is_staff:                   
         return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
-    LotteryTicket.objects.create(
-        game_type=request.data.get('game_type'),
-        ticket_price=request.data.get('ticket_price'),
-        prize_amount=request.data.get('prize_amount'),
-    )
+    
+    game_type = request.data.get("game_type")
+    ticket_price = request.data.get("ticket_price")
+    prize_amount = request.data.get("prize_amount")
+
+    LotteryTicket.objects.create(game_type=game_type, ticket_price=ticket_price, prize_amount=prize_amount)
+
     return Response({'message': 'Ticket added successfully!'}, status=status.HTTP_201_CREATED)
 
-
+#==================================================
+# Admin View // Remove ticket type
+# Accepts POST request from verified admin
+# and details of ticket to be removed
+#==================================================
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+
 def admin_remove_ticket(request):
-    if not _admin_required(request.user):
+    if not request.user.is_staff:                   
         return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
-    LotteryTicket.objects.filter(game_type=request.data.get('game_type')).delete()
-    return Response({'message': 'Ticket removed successfully!'})
+    
+    game_type = request.data.get("game_type")
 
+    LotteryTicket.objects.get(game_type=game_type).delete()
 
-@api_view(['PUT', 'POST'])
+    return Response({'message': 'Ticket removed successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Update ticket type
+# Accepts POST request from verified admin
+# and details of ticket to be updated
+#==================================================
+@api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+
 def admin_update_ticket(request):
-    if not _admin_required(request.user):
+    if not request.user.is_staff:                   
         return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
-    LotteryTicket.objects.filter(game_type=request.data.get('game_type')).update(
-        ticket_price=request.data.get('ticket_price'),
-        prize_amount=request.data.get('prize_amount'),
-    )
-    return Response({'message': 'Ticket updated successfully!'})
+    
+    game_type = request.data.get("game_type")
+    ticket_price = request.data.get("ticket_price")
+    prize_amount = request.data.get("prize_amount")
 
+    LotteryTicket.objects.filter(game_type=game_type).update(ticket_price=ticket_price, prize_amount=prize_amount)
 
+    return Response({'message': 'Ticket updated successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Run a draw
+# Accepts POST request from verified admin
+# Runs draw from determine_winners()
+#==================================================
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+
 def admin_run_draw(request):
     """
     Run a draw for a given game_type. Phase 3: admin can pass winning_numbers
@@ -642,6 +691,44 @@ def admin_run_draw(request):
     """
     if not _admin_required(request.user):
         return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    draw_id = request.data.get("draw_id")
+    draw = LotteryDraw.objects.get(draw_id=draw_id)
+
+    draw.determine_winners()                          #call determine_winners from models.py
+
+    return Response({'message': 'Draw completed successfully!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Admin View // Publish a draw
+# Accepts POST request from verified admin
+# Returns draw along with numbers and winners
+#==================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
+def admin_publish_draw(request):
+    if not request.user.is_staff:                   
+        return Response({'error': 'Admin access only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    draw_id = request.data.get("draw_id")
+    draw = LotteryDraw.objects.get(draw_id=draw_id)
+
+    draw.publish_results()                          #call publish_results() from models.py
+
+    return Response({'message': 'Draw results published!'}, status=status.HTTP_200_OK)
+
+#==================================================
+# Profile View
+# Accepts GET request from logged in user
+# Returns profile page
+#==================================================
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+
+def profile_page_view(request):
+
+    user = request.user
 
     game_type = request.data.get('game_type')
     game = get_object_or_404(LotteryTicket, game_type=game_type)
